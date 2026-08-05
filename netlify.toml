@@ -2,22 +2,25 @@
   command = "npm run build"
   publish = "dist"
 
+[build.environment]
+  NODE_VERSION = "22"
+
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-[build.environment]
-  NODE_VERSION = "22"
+# AQUI ESTÁ A MÁGICA: Forçando o empacotador moderno na sua função específica
+[functions."origem"]
+  node_bundler = "esbuild"
 
-# 1. Redirecionamento da API (PRECISA VIR ANTES)
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
   force = true
 
-# 2. Fallback do React
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
