@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import ws from 'ws';
 import type { OrigemData } from './schema';
 
 let _supabase: SupabaseClient | null = null;
@@ -24,9 +25,16 @@ function getSupabase(): SupabaseClient | null {
   }
 
   console.info(`Supabase conectado: ${url.substring(0, 30)}... key_type=${key.startsWith('sb_secret') ? 'secret' : key.startsWith('sb_publishable') ? 'publishable' : key.startsWith('eyJ') ? 'jwt' : 'unknown'}`);
-  _supabase = createClient(url, key);
+  _supabase = createClient(url, key, {
+    realtime: {
+      transport: ws
+    },
+    auth: {
+      persistSession: false // Boa prática em servidores backend
+    }
+  });
+  
   return _supabase;
-}
 
 function gerarCacheKey(titulo: string, artista: string): string {
   return `${titulo.toLowerCase().trim()}::${artista.toLowerCase().trim()}`;
