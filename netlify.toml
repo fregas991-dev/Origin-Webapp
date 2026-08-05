@@ -5,18 +5,19 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+  format = "esm"
 
 [build.environment]
   NODE_VERSION = "18"
 
-# 1. Rota da API (Netlify Functions) - PRECISA VIR ANTES
+# Redirecionamento da API
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
   force = true
 
-# 2. Fallback do React - Salva a sua vida ao atualizar a página
+# Fallback do React (impede erro 404 ao atualizar a página)
 [[redirects]]
   from = "/*"
   to = "/index.html"
