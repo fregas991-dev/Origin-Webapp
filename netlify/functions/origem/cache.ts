@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { OrigemData } from './schema';
+import type { OrigemData } from './schema.js';
 
 let _supabase: SupabaseClient | null = null;
 let _supabaseAvailable = true;
