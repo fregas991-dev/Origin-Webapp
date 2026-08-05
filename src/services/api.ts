@@ -44,26 +44,24 @@ export async function fetchHistoria(musica: string, artista: string): Promise<Hi
       throw new Error(json.error || 'Resposta inválida da API');
     }
 
+    // AQUI ESTÁ O SEGREDO: Pegamos o detalhe que o backend nos enviou
     const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error || `HTTP ${response.status}`);
+    throw new Error(errData.detail || errData.error || `HTTP ${response.status}`);
+    
   } catch (error) {
-    if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      return generateOfflineFallback(musica, artista);
-    }
-    if (error instanceof Error && !error.message.includes('API')) {
-      console.warn('API indisponível:', error.message);
-      return generateOfflineFallback(musica, artista);
-    }
-    throw error;
+    // Pegamos a mensagem de erro nua e crua
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return generateOfflineFallback(musica, artista, errorMessage);
   }
 }
 
-function generateOfflineFallback(musica: string, artista: string): Historia {
+// Atualizamos o fallback para mostrar o erro na UI
+function generateOfflineFallback(musica: string, artista: string, detalheErro: string = 'Erro desconhecido'): Historia {
   return {
     titulo: musica,
     artista,
     ano: '—',
-    historia: `A história de "${musica}" por ${artista} ainda será revelada.\n\nO servidor ORIGEM não está disponível no momento. Verifique se o backend está configurado e tente novamente.\n\nQuando a conexão estiver ativa, esta canção ganhará vida com contexto histórico, inspiração do compositor, curiosidades e fontes verificadas.`,
+    historia: `🚨 ALERTA DE DEBUG 🚨\nO servidor backend falou o seguinte:\n\n"${detalheErro}"\n\n---------------------------\nA história de "${musica}" por ${artista} ainda será revelada. O servidor ORIGEM não está disponível no momento.`,
     salvo: false,
     timestamp: Date.now(),
   };
