@@ -9,7 +9,15 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# 1. Rota da API (Netlify Functions) - PRECISA VIR ANTES
 [[redirects]]
-  from = "/api/origem"
-  to = "/.netlify/functions/origem"
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+# 2. Fallback do React - Salva a sua vida ao atualizar a página
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
   status = 200
