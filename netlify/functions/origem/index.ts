@@ -1,6 +1,6 @@
-import { buscarDoCache, salvarNoCache } from './cache.js';
-import { gerarOrigem, type OrigemResult } from './ai.js';
-import type { OrigemData } from './schema.js';
+import { buscarDoCache, salvarNoCache } from './cache';
+import { gerarOrigem, type OrigemResult } from './ai';
+import type { OrigemData } from './schema';
 
 interface RequestBody {
   titulo?: string;
