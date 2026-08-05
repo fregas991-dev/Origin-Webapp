@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
-import { OrigemSchema, normalizeOrigemData, type OrigemData } from './schema.js';
-import { buildSystemPrompt, buildUserPrompt, buildRetryPrompt } from './prompt.js';
-import { buscarMetadados, type MetadadosCompletos } from './metadata.js';
+import { OrigemSchema, normalizeOrigemData, type OrigemData } from './schema';
+import { buildSystemPrompt, buildUserPrompt, buildRetryPrompt } from './prompt';
+import { buscarMetadados, type MetadadosCompletos } from './metadata';
 
 let _openai: OpenAI | null = null;
 
