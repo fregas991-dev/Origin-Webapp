@@ -3,14 +3,11 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "22"
+  NODE_VERSION = "20"
+  AWS_LAMBDA_JS_RUNTIME = "nodejs20.x"
 
 [functions]
   directory = "netlify/functions"
-  node_bundler = "esbuild"
-
-# AQUI ESTÁ A MÁGICA: Forçando o empacotador moderno na sua função específica
-[functions."origem"]
   node_bundler = "esbuild"
 
 [[redirects]]
@@ -23,4 +20,3 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
