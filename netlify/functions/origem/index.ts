@@ -90,9 +90,16 @@ export const handler = async function (
 
     // 4. Salvar no cache central — opcional
     try {
-      await salvarNoCache(titulo, artista, dataComImagem as OrigemData);
+      console.log(`[ORIGEM - SUPABASE] Iniciando envio do cache para: "${titulo}"`);
+      
+      // MÁGICA AQUI: Limpa campos 'undefined' que fazem o cliente do Supabase falhar silenciosamente
+      const dadosSanitizados = JSON.parse(JSON.stringify(dataComImagem));
+      
+      await salvarNoCache(titulo, artista, dadosSanitizados as OrigemData);
+      
+      console.log(`[ORIGEM - SUPABASE] Concluído comando de salvar cache para: "${titulo}"`);
     } catch (cacheErr) {
-      console.warn('[ORIGEM] Erro ao salvar cache (não fatal):', cacheErr);
+      console.warn('[ORIGEM - SUPABASE] Erro ao salvar cache (não fatal):', cacheErr);
     }
 
     console.log(`[ORIGEM] Sucesso: "${titulo}"`);
