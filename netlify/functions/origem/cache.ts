@@ -2,28 +2,19 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { OrigemData } from './schema';
 
 let _supabase: SupabaseClient | null = null;
-let _supabaseAvailable = true;
 
 function getSupabase(): SupabaseClient | null {
   if (_supabase) return _supabase;
-  if (!_supabaseAvailable) return null;
 
   const url = process.env.SUPABASE_URL;
-
-  // Tenta a secret key (sb_secret_...) primeiro, depois service_role (eyJ...), depois anon
   const key =
     process.env.SUPABASE_SECRET_KEY ||
     process.env.SUPABASE_SERVICE_KEY ||
     process.env.SUPABASE_ANON_KEY ||
     process.env.SUPABASE_PUBLISHABLE_KEY;
 
-  if (!url || !key) {
-    console.info('Supabase não configurado — cache central desabilitado');
-    _supabaseAvailable = false;
-    return null;
-  }
+  if (!url || !key) return null;
 
-  console.info(`Supabase conectado: ${url.substring(0, 30)}... key_type=${key.startsWith('sb_secret') ? 'secret' : key.startsWith('sb_publishable') ? 'publishable' : key.startsWith('eyJ') ? 'jwt' : 'unknown'}`);
   _supabase = createClient(url, key);
   return _supabase;
 }
@@ -38,39 +29,30 @@ export async function buscarDoCache(
 ): Promise<OrigemData | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
-
   try {
-    const key = gerarCacheKey(titulo, artista);
-
     const { data, error } = await supabase
       .from('origens')
       .select('dados')
-      .eq('cache_key', key)
+      .eq('cache_key', gerarCacheKey(titulo, artista))
       .maybeSingle();
-
-    if (error) {
-      console.warn('Erro ao buscar cache Supabase:', error.message);
-      return null;
-    }
-
+    if (error) return null;
     return data?.dados ?? null;
   } catch (err) {
-    console.warn('Exceção ao buscar cache Supabase:', err);
     return null;
   }
 }
 
+// AGORA RETORNA UMA STRING COM O RESULTADO
 export async function salvarNoCache(
   titulo: string,
   artista: string,
   dados: OrigemData
-): Promise<void> {
+): Promise<string> {
   const supabase = getSupabase();
-  if (!supabase) return;
+  if (!supabase) return "Variáveis do Supabase (URL ou KEY) sumiram no Netlify.";
 
   try {
     const key = gerarCacheKey(titulo, artista);
-
     const { error } = await supabase.from('origens').upsert(
       {
         cache_key: key,
@@ -82,10 +64,12 @@ export async function salvarNoCache(
       { onConflict: 'cache_key' }
     );
 
+    // Se o banco recusar, a gente pega a mensagem exata!
     if (error) {
-      console.warn('Erro ao salvar no cache Supabase:', error.message);
+       return `Supabase recusou: ${error.message} (Código: ${error.code})`;
     }
+    return "OK";
   } catch (err) {
-    console.warn('Exceção ao salvar no cache Supabase:', err);
+    return `Exceção fatal no código: ${String(err)}`;
   }
 }
