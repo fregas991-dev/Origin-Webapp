@@ -1,39 +1,82 @@
-import { buscarDoCache, salvarNoCache } from './cache';
-import { gerarOrigem, type OrigemResult } from './ai';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { OrigemData } from './schema';
 
-interface ApiResponse {
-  success: boolean;
-  data?: OrigemData & { capaUrl?: string; artistaFotoUrl?: string };
-  error?: string;
-  detail?: string;
-  from_cache?: boolean;
-}
+let _supabase: SupabaseClient | null = null;
 
-const COMMON_HEADERS: Record<string, string> = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+function getSupabase(): SupabaseClient | null {
+  // Reutiliza a conexão se ela já existir na memória do servidor
+  if (_supabase) return _supabase;
 
-export const handler = async function (
-  event: { httpMethod: string; body: string | null; [key: string]: unknown },
-  _context: unknown
-): Promise<{ statusCode: number; body: string; headers: Record<string, string> }> {
-  console.log('[ORIGEM] Handler invocado. method=', event.httpMethod);
+  const url = process.env.SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SECRET_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY;
 
-  // CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, body: '', headers: COMMON_HEADERS };
+  // Se não achar as variáveis, retorna nulo, mas NÃO bloqueia as próximas tentativas
+  if (!url || !key) {
+    return null; 
   }
 
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ success: false, error: 'Método não permitido. Use POST.' }),
-      headers: COMMON_HEADERS,
-    };
+  _supabase = createClient(url, key);
+  return _supabase;
+}
+
+function gerarCacheKey(titulo: string, artista: string): string {
+  return `${titulo.toLowerCase().trim()}::${artista.toLowerCase().trim()}`;
+}
+
+export async function buscarDoCache(
+  titulo: string,
+  artista: string
+): Promise<OrigemData | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  try {
+    const key = gerarCacheKey(titulo, artista);
+
+    const { data, error } = await supabase
+      .from('origens')
+      .select('dados')
+      .eq('cache_key', key)
+      .maybeSingle();
+
+    if (error) return null;
+
+    return data?.dados ?? null;
+  } catch (err) {
+    return null;
+  }
+}
+
+export async function salvarNoCache(
+  titulo: string,
+  artista: string,
+  dados: OrigemData
+): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) return;
+
+  try {
+    const key = gerarCacheKey(titulo, artista);
+
+    // Envia o upsert garantindo que os dados não têm lixo ou 'undefined'
+    await supabase.from('origens').upsert(
+      {
+        cache_key: key,
+        titulo,
+        artista,
+        dados,
+        criado_em: new Date().toISOString(),
+      },
+      { onConflict: 'cache_key' }
+    );
+  } catch (err) {
+    // Falha silenciosa: a IA gerou a resposta e o app não vai quebrar
+  }
+}
   }
 
   // Parse body
