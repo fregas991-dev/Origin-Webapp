@@ -8,15 +8,16 @@ const CuriosidadeSchema = z.object({
 const FonteSchema = z.object({
   titulo: z.string(),
   url: z.string().nullable().optional(),
-  tipo: z.string().nullable().optional(),
+  tipo: z.enum([
     'entrevista',
     'enciclopedia',
     'biografia',
     'jornal',
     'discografia',
     'documentario',
-  ]),
+  ]).nullable().optional(),
 });
+
 
 const ConfiancaSchema = z.object({
   nivel: z.enum(['alto', 'medio', 'baixo']),
