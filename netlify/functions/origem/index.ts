@@ -17,7 +17,7 @@ const COMMON_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-exports.handler = async function (
+export const handler = async function (
   event: { httpMethod: string; body: string | null; [key: string]: unknown },
   _context: unknown
 ): Promise<{ statusCode: number; body: string; headers: Record<string, string> }> {
