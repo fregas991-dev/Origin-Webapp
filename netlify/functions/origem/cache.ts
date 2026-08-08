@@ -1,22 +1,15 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { OrigemData } from './schema';
 
-let _supabase: SupabaseClient | null = null;
-
-function getSupabase(): SupabaseClient | null {
-  if (_supabase) return _supabase;
-
+function getKeys() {
   const url = process.env.SUPABASE_URL;
   const key =
     process.env.SUPABASE_SECRET_KEY ||
     process.env.SUPABASE_SERVICE_KEY ||
     process.env.SUPABASE_ANON_KEY ||
     process.env.SUPABASE_PUBLISHABLE_KEY;
-
+  
   if (!url || !key) return null;
-
-  _supabase = createClient(url, key);
-  return _supabase;
+  return { url, key };
 }
 
 function gerarCacheKey(titulo: string, artista: string): string {
@@ -27,49 +20,72 @@ export async function buscarDoCache(
   titulo: string,
   artista: string
 ): Promise<OrigemData | null> {
-  const supabase = getSupabase();
-  if (!supabase) return null;
+  const creds = getKeys();
+  if (!creds) return null;
+
   try {
-    const { data, error } = await supabase
-      .from('origens')
-      .select('dados')
-      .eq('cache_key', gerarCacheKey(titulo, artista))
-      .maybeSingle();
-    if (error) return null;
-    return data?.dados ?? null;
+    const cacheKey = gerarCacheKey(titulo, artista);
+    const encodedKey = encodeURIComponent(cacheKey);
+    
+    // MÁGICA 1: Usando HTTP puro em vez do cliente "mimado" com WebSockets
+    const response = await fetch(`${creds.url}/rest/v1/origens?cache_key=eq.${encodedKey}&select=dados`, {
+      method: 'GET',
+      headers: {
+        'apikey': creds.key,
+        'Authorization': `Bearer ${creds.key}`
+      }
+    });
+
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    if (data && data.length > 0 && data[0].dados) {
+      return data[0].dados;
+    }
+    
+    return null;
   } catch (err) {
     return null;
   }
 }
 
-// AGORA RETORNA UMA STRING COM O RESULTADO
 export async function salvarNoCache(
   titulo: string,
   artista: string,
   dados: OrigemData
 ): Promise<string> {
-  const supabase = getSupabase();
-  if (!supabase) return "Variáveis do Supabase (URL ou KEY) sumiram no Netlify.";
+  const creds = getKeys();
+  if (!creds) return "Variáveis do Supabase sumiram no Netlify.";
 
   try {
-    const key = gerarCacheKey(titulo, artista);
-    const { error } = await supabase.from('origens').upsert(
-      {
-        cache_key: key,
+    const cacheKey = gerarCacheKey(titulo, artista);
+    
+    // MÁGICA 2: Fazendo o UPSERT via HTTP REST
+    const response = await fetch(`${creds.url}/rest/v1/origens`, {
+      method: 'POST',
+      headers: {
+        'apikey': creds.key,
+        'Authorization': `Bearer ${creds.key}`,
+        'Content-Type': 'application/json',
+        // Essa linha manda o Supabase atualizar se a Chave Primária já existir
+        'Prefer': 'resolution=merge-duplicates' 
+      },
+      body: JSON.stringify({
+        cache_key: cacheKey,
         titulo,
         artista,
         dados,
-        criado_em: new Date().toISOString(),
-      },
-      { onConflict: 'cache_key' }
-    );
+        criado_em: new Date().toISOString()
+      })
+    });
 
-    // Se o banco recusar, a gente pega a mensagem exata!
-    if (error) {
-       return `Supabase recusou: ${error.message} (Código: ${error.code})`;
+    if (!response.ok) {
+       const errorText = await response.text();
+       return `REST falhou: ${response.status} - ${errorText}`;
     }
+    
     return "OK";
   } catch (err) {
-    return `Exceção fatal no código: ${String(err)}`;
+    return `Exceção REST: ${String(err)}`;
   }
 }
