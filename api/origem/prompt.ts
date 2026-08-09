@@ -1,4 +1,4 @@
-import type { MetadadosCompletos } from './metadata';
+import type { MetadadosCompletos } from './metadata.ja';
 
 export function buildSystemPrompt(): string {
   return `Você é um pesquisador musical especializado em música popular brasileira e mundial. Sua tarefa é explicar a ORIGEM de uma canção — como ela surgiu, não apenas o que a letra signi[...]
