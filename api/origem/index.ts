@@ -1,5 +1,5 @@
-import { buscarDoCache, salvarNoCache } from './cache';
-import { gerarOrigem } from './ai';
+import { buscarDoCache, salvarNoCache } from './cache.js';
+import { gerarOrigem } from './ai.js';
 
 export default async function handler(req: any, res: any) {
   // 1. Libera o CORS (Acesso para o seu App Android)
