@@ -2,14 +2,22 @@
   command = "npm run build"
   publish = "dist"
 
+# ISSO AQUI RESOLVE O PROBLEMA
+[build.environment]
+  NODE_VERSION = "20"
+  AWS_LAMBDA_JS_RUNTIME = "nodejs20.x"
+
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-[build.environment]
-  NODE_VERSION = "18"
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
 
 [[redirects]]
-  from = "/api/origem"
-  to = "/.netlify/functions/origem"
+  from = "/*"
+  to = "/index.html"
   status = 200
