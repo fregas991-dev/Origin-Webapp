@@ -1,4 +1,4 @@
-import type { OrigemData } from './schema';
+import type { OrigemData } from './schema.js';
 
 function getKeys() {
   const url = process.env.SUPABASE_URL;
